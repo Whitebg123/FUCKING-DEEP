@@ -1,0 +1,15 @@
+
+{
+  "name": "jiang-jie-shi-wu-yu",
+  "version": "1.0.0",
+  "private": true,
+  "description": "疆界时物语 - WebRTC多人语音房间",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "socket.io": "^4.8.1"
+  }
+}
