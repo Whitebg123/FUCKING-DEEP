@@ -1,0 +1,228 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f8f3ff">
+  <meta name="description" content="疆界时物语——属于伙伴们的私人语音小屋">
+  <title>疆界时物语 · 私人语音小屋</title>
+
+  <link rel="stylesheet" href="/style.css">
+
+  <script src="/socket.io/socket.io.js" defer></script>
+  <script src="/app.js" defer></script>
+</head>
+
+<body>
+  <div class="page-shell">
+
+    <header class="topbar">
+      <a class="brand" href="/" aria-label="疆界时物语首页">
+        <span class="brand-mark">✦</span>
+        <span class="brand-text">
+          <strong>疆界时物语</strong>
+          <small>BOUNDARY TALES</small>
+        </span>
+      </a>
+
+      <div class="top-actions">
+        <label class="wallpaper-button" for="wallpaper-input">
+          <span>✿</span>
+          更换背景
+        </label>
+
+        <input
+          id="wallpaper-input"
+          type="file"
+          accept="image/*"
+          hidden
+        >
+
+        <span class="status-chip" id="connection-badge">
+          <span class="status-dot"></span>
+          <span id="connection-text">等待连接</span>
+        </span>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero-intro">
+        <p class="eyebrow">✧ PRIVATE VOICE SANCTUARY ✧</p>
+        <h1>在这里，听见彼此。</h1>
+        <p class="hero-description">
+          留一点安静的边界，给熟悉的声音。
+        </p>
+        <div class="hero-decoration">
+          <span>☾</span>
+          <span>✧</span>
+          <span>⋆</span>
+          <span>✦</span>
+          <span>☽</span>
+        </div>
+      </section>
+
+      <section class="panel login-panel" id="login-screen">
+        <div class="panel-icon">☾</div>
+
+        <p class="section-kicker">ONLY FOR OUR PARTY</p>
+        <h2>进入语音小屋</h2>
+
+        <p class="panel-description">
+          输入约定好的口令，加入我们的私人房间。
+        </p>
+
+        <form id="login-form">
+          <label for="password-input">房间口令</label>
+
+          <div class="input-wrap">
+            <span class="input-symbol">✧</span>
+
+            <input
+              id="password-input"
+              type="password"
+              autocomplete="current-password"
+              maxlength="128"
+              placeholder="输入房间口令"
+              required
+            >
+
+            <button
+              id="toggle-password"
+              class="icon-button"
+              type="button"
+              aria-label="显示口令"
+            >◉</button>
+          </div>
+
+          <p
+            id="login-error"
+            class="message"
+            role="alert"
+            aria-live="polite"
+          ></p>
+
+          <button
+            type="submit"
+            id="login-button"
+            class="primary-button"
+          >
+            <span>进入房间</span>
+            <span aria-hidden="true">↗</span>
+          </button>
+        </form>
+
+        <div class="privacy-note">
+          <span>♡</span>
+          这是一个小房间，请妥善保管口令。
+        </div>
+      </section>
+
+      <section class="panel room-panel" id="room-screen" hidden>
+        <div class="room-heading">
+          <div>
+            <p class="section-kicker">YOUR PRIVATE ROOM</p>
+            <h2>星屑会客厅 <span class="moon">✦</span></h2>
+            <p id="room-subtitle">准备连接伙伴……</p>
+          </div>
+
+          <div class="room-capacity">
+            <span id="member-count">1</span>
+            <span>/ 5 位旅人</span>
+          </div>
+        </div>
+
+        <div class="room-status-row">
+          <span class="live-indicator"></span>
+          <span id="room-status">正在连接语音……</span>
+          <span class="room-tag">私人房间</span>
+        </div>
+
+        <div
+          id="peer-list"
+          class="peer-list"
+          aria-live="polite"
+        >
+          <div class="peer-card self-card">
+            <div class="avatar">☾</div>
+            <div class="peer-info">
+              <strong>老大</strong>
+              <span class="peer-state">正在加入……</span>
+            </div>
+            <span class="peer-indicator"></span>
+          </div>
+        </div>
+
+        <div
+          id="audio-container"
+          class="audio-area"
+          aria-label="其他成员的音频"
+        ></div>
+
+        <div class="control-bar">
+          <button
+            type="button"
+            id="mute-button"
+            class="control-button mute-button"
+          >
+            <span class="control-icon">♫</span>
+            <span id="mute-label">关闭麦克风</span>
+          </button>
+
+          <button
+            type="button"
+            id="leave-button"
+            class="control-button leave-button"
+          >
+            <span class="control-icon">↗</span>
+            <span>离开房间</span>
+          </button>
+        </div>
+
+        <p class="room-footnote">
+          推荐使用耳机 · 首次使用时请允许浏览器访问麦克风。
+        </p>
+      </section>
+
+      <section class="feature-strip" aria-label="房间特点">
+        <div class="feature">
+          <span class="feature-icon">✧</span>
+          <div>
+            <strong>私人空间</strong>
+            <small>口令验证</small>
+          </div>
+        </div>
+
+        <div class="feature">
+          <span class="feature-icon">♧</span>
+          <div>
+            <strong>轻量语音</strong>
+            <small>浏览器即可使用</small>
+          </div>
+        </div>
+
+        <div class="feature">
+          <span class="feature-icon">☾</span>
+          <div>
+            <strong>伙伴相聚</strong>
+            <small>最多 5 位成员</small>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <span>疆界时物语</span>
+      <span>把声音留在故事里 · 2026</span>
+    </footer>
+
+  </div>
+
+  <div
+    id="toast-container"
+    class="toast-container"
+    role="status"
+    aria-live="polite"
+  ></div>
+</body>
+</html>
