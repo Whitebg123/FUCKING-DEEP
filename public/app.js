@@ -39,10 +39,16 @@
   let localStream = null;
   let isMuted = true;
   let mediaReady = false;
+  let microphoneRequestId = 0;
+  let microphonePending = false;
 
   // 当前房间成员
   let knownPeerIds = new Set();
   const peers = new Map();
+  const audioQuality = window.VoiceAudio.create({
+    getPeers: () => [...peers.values()],
+    notice: (message, type) => showToast(message, type)
+  });
 
   // 等待麦克风准备好后处理的事件
   let pendingRoomUsers = [];
@@ -154,6 +160,7 @@
   // ---------- 麦克风 ----------
 
   function updateMuteButton() {
+    muteButton.disabled = microphonePending;
     if (!localStream) {
       muteLabel.textContent = "开启麦克风";
       muteButton.classList.add("muted");
@@ -170,6 +177,9 @@
   }
 
   function stopLocalStream() {
+    // Invalidate even an unresolved permission request before another login.
+    microphoneRequestId += 1;
+    microphonePending = false;
     if (localStream) {
       localStream.getTracks().forEach((track) => {
         track.stop();
@@ -178,39 +188,50 @@
 
     localStream = null;
     isMuted = true;
+    audioQuality.bindTrack(null);
 
     updateMuteButton();
+  }
+
+  async function acquireMicrophone(activeSocket) {
+    const requestId = ++microphoneRequestId;
+    microphonePending = true;
+    updateMuteButton();
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia(
+        audioQuality.constraints()
+      );
+      if (
+        requestId !== microphoneRequestId ||
+        socket !== activeSocket ||
+        !activeSocket.connected || roomScreen.hidden
+      ) {
+        stream.getTracks().forEach(track => track.stop());
+        return null;
+      }
+      if (!stream.getAudioTracks().length) {
+        stream.getTracks().forEach(track => track.stop());
+        throw new Error("没有找到可用的麦克风音轨");
+      }
+      return stream;
+    } finally {
+      if (requestId === microphoneRequestId) {
+        microphonePending = false;
+        updateMuteButton();
+      }
+    }
   }
 
   async function startRoomMedia(activeSocket) {
     setRoomStatus("正在请求麦克风权限……", false);
 
     try {
-      const stream =
-        await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true
-          },
-          video: false
-        });
-
-      // 如果用户已经离开房间，不再保留麦克风。
-      if (
-        socket !== activeSocket ||
-        !activeSocket.connected ||
-        roomScreen.hidden
-      ) {
-        stream.getTracks().forEach((track) => {
-          track.stop();
-        });
-
-        return;
-      }
+      const stream = await acquireMicrophone(activeSocket);
+      if (!stream) return;
 
       localStream = stream;
       isMuted = false;
+      audioQuality.bindTrack(stream.getAudioTracks()[0]);
 
       setRoomStatus(
         "麦克风已就绪，正在连接伙伴……",
@@ -251,6 +272,7 @@
   // 成功后通过 WebRTC 重新协商，把麦克风加入现有连接。
   async function requestMicrophoneInRoom() {
     const activeSocket = socket;
+    if (microphonePending) return;
 
     if (
       !activeSocket ||
@@ -262,30 +284,12 @@
     }
 
     try {
-      const stream =
-        await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true
-          },
-          video: false
-        });
-
-      if (
-        socket !== activeSocket ||
-        !activeSocket.connected ||
-        roomScreen.hidden
-      ) {
-        stream.getTracks().forEach((track) => {
-          track.stop();
-        });
-
-        return;
-      }
+      const stream = await acquireMicrophone(activeSocket);
+      if (!stream) return;
 
       localStream = stream;
       isMuted = false;
+      audioQuality.bindTrack(stream.getAudioTracks()[0]);
 
       const audioTrack = stream.getAudioTracks()[0];
 
@@ -302,6 +306,7 @@
 
       // 为已经建立的连接添加本地音轨。
       for (const [peerId, peer] of peers) {
+        if (socket !== activeSocket || localStream !== stream) return;
         try {
           const transceiver =
             peer.pc.getTransceivers().find(
@@ -320,6 +325,10 @@
             peer.pc.addTrack(audioTrack, stream);
           }
 
+          if (socket !== activeSocket || peers.get(peerId) !== peer) return;
+          audioQuality.preferOpus(peer);
+          void audioQuality.configureSenders(peer);
+
           peer.needsOffer = true;
 
           void createOffer(peerId, peer);
@@ -336,6 +345,7 @@
 
       showToast("麦克风已开启。", "success");
     } catch (error) {
+      if (socket !== activeSocket || !activeSocket.connected || roomScreen.hidden) return;
       showToast(
         "麦克风开启失败，请检查设备和浏览器权限。",
         "error"
@@ -354,6 +364,7 @@
     localStream.getAudioTracks().forEach((track) => {
       track.enabled = !isMuted;
     });
+    audioQuality.refreshCapture();
 
     updateMuteButton();
     renderPeerList();
@@ -533,6 +544,7 @@
         direction: "recvonly"
       });
     }
+    audioQuality.preferOpus(peer);
 
     // 发送 ICE candidate。
     pc.onicecandidate = (event) => {
@@ -605,6 +617,10 @@
       renderPeerList();
       updateOverallRoomStatus();
 
+      if (pc.connectionState === "connected") {
+        void audioQuality.configureSenders(peer);
+      }
+
       if (pc.connectionState === "failed") {
         showToast(
           "与一位伙伴的语音连接失败，请检查网络。",
@@ -615,6 +631,10 @@
 
     // 信令恢复稳定后，如果有尚未完成的协商，则继续处理。
     pc.onsignalingstatechange = () => {
+      if (peers.get(peerId) !== peer) return;
+      if (pc.signalingState === "stable") {
+        void audioQuality.configureSenders(peer);
+      }
       if (
         pc.signalingState === "stable" &&
         peer.needsOffer &&
@@ -663,7 +683,7 @@
   }
 
   async function createOffer(peerId, peer) {
-    if (!peer || !socket?.connected) {
+    if (!peer || peers.get(peerId) !== peer || !socket?.connected) {
       return;
     }
 
@@ -681,7 +701,10 @@
     peer.needsOffer = false;
 
     try {
+      audioQuality.preferOpus(peer);
       const offer = await peer.pc.createOffer();
+
+      if (peers.get(peerId) !== peer || !socket?.connected) return;
 
       if (peer.pc.signalingState !== "stable") {
         peer.needsOffer = true;
@@ -690,6 +713,8 @@
 
       await peer.pc.setLocalDescription(offer);
 
+      if (peers.get(peerId) !== peer || !socket?.connected) return;
+
       const description = {
         type: peer.pc.localDescription.type,
         sdp: peer.pc.localDescription.sdp
@@ -697,6 +722,7 @@
 
       sendSignal(peerId, "offer", description);
     } catch (error) {
+      if (peers.get(peerId) !== peer) return;
       peer.needsOffer = true;
 
       console.error("创建语音连接失败：", error);
@@ -822,21 +848,28 @@
 
       await pc.setRemoteDescription(data);
 
+      if (peers.get(peerId) !== peer || !socket?.connected) return;
+
       peer.isSettingRemoteAnswerPending = false;
 
       await flushPendingCandidates(peer);
 
       if (type === "offer") {
+        audioQuality.preferOpus(peer);
         const answer = await pc.createAnswer();
 
         await pc.setLocalDescription(answer);
+
+        if (peers.get(peerId) !== peer || !socket?.connected) return;
 
         sendSignal(peerId, "answer", {
           type: pc.localDescription.type,
           sdp: pc.localDescription.sdp
         });
       }
+      void audioQuality.configureSenders(peer);
     } catch (error) {
+      if (peers.get(peerId) !== peer) return;
       peer.isSettingRemoteAnswerPending = false;
 
       if (!peer.ignoreOffer) {
@@ -1240,6 +1273,7 @@
 
   // 浏览器关闭或刷新时释放本地媒体资源。
   window.addEventListener("beforeunload", () => {
+    audioQuality.dispose();
     if (socket) {
       socket.disconnect();
     }

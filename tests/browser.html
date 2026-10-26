@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>WebRTC synthetic integration checks</title>
+<style>
+  body {font: 15px system-ui; margin: 24px; color: #29213b; background: #faf7ff;}
+  button {padding: 14px 20px; font: inherit; cursor: pointer;}
+  #frames {display: flex; flex-wrap: wrap; gap: 8px;}
+  iframe {width: 300px; height: 210px; border: 1px solid #b8a5dc;}
+  pre {white-space: pre-wrap; overflow-wrap: anywhere;}
+  .pass {color: #176843;} .fail {color: #a02942;}
+</style>
+<h1>WebRTC synthetic integration checks</h1>
+<p>Local test room only. Native WebRTC, synthetic audio, muted output; no real microphone or listening assessment.</p>
+<button id="run">Run tests</button>
+<label><input id="loopback" type="checkbox"> Test-only loopback ICE address fixture (same machine only; no production change)</label>
+<p id="status">Ready</p>
+<ol id="results"></ol>
+<pre id="details"></pre>
+<div id="frames"></div>
+<script src="/test/runner.js" defer></script>
+</html>

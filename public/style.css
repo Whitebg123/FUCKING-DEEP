@@ -1174,3 +1174,133 @@ footer {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ---------- Audio settings: native controls, existing lavender theme ---------- */
+
+.audio-panel {
+  width: min(100%, 600px);
+  padding: 22px;
+  font-size: 12px;
+}
+
+.audio-panel summary {
+  color: var(--primary-dark);
+  font-weight: 750;
+  cursor: pointer;
+  min-height: 28px;
+  line-height: 28px;
+}
+
+.audio-help {
+  color: #685c80;
+  font-size: 12px;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
+
+.audio-processing {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+  padding: 14px;
+  margin: 16px 0;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+}
+
+.audio-processing legend {
+  padding: 0 6px;
+  color: #685c80;
+}
+
+.audio-processing label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 36px;
+  cursor: pointer;
+}
+
+.audio-processing input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--primary-dark);
+}
+
+.audio-presets,
+.diagnostics-heading {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 14px 0;
+}
+
+.diagnostics-heading {
+  justify-content: space-between;
+}
+
+.diagnostics-heading h3 {
+  margin: 0;
+  font-size: 13px;
+}
+
+.audio-panel button,
+.audio-panel select {
+  min-height: 40px;
+  padding: 9px 12px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--primary-dark);
+  background: #fff;
+  font: inherit;
+  cursor: pointer;
+}
+
+.bitrate-label {
+  display: block;
+  margin: 18px 0 9px;
+  font-weight: 700;
+}
+
+.audio-panel select {
+  width: 100%;
+  max-width: 100%;
+}
+
+.audio-panel :is(summary, select):focus-visible {
+  outline: 3px solid rgba(137, 114, 216, 0.45);
+  outline-offset: 4px;
+}
+
+.capture-settings,
+.quality-peer pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.9;
+  font-family: inherit;
+  font-size: 11px;
+}
+
+.capture-settings,
+.quality-peer {
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #faf8ff;
+}
+
+.connection-stats {
+  display: grid;
+  gap: 10px;
+  line-height: 1.8;
+  color: #685c80;
+}
+
+.quality-peer {
+  min-width: 0;
+}
+
+.quality-peer pre {
+  margin-bottom: 0;
+}

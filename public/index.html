@@ -11,6 +11,7 @@
   <link rel="stylesheet" href="/style.css">
 
   <script src="/socket.io/socket.io.js" defer></script>
+  <script src="/audio-quality.js" defer></script>
   <script src="/app.js" defer></script>
 </head>
 
@@ -182,6 +183,50 @@
         <p class="room-footnote">
           推荐使用耳机 · 首次使用时请允许浏览器访问麦克风。
         </p>
+      </section>
+
+      <section class="panel audio-panel" aria-label="声音设置与连接诊断">
+        <details id="audio-settings">
+          <summary>声音设置与连接诊断</summary>
+          <p class="audio-help">
+            推荐耳机游戏语音：保留回声消除，先关闭降噪和自动增益。
+            使用扬声器时请保持回声消除开启；环境嘈杂时可单独开启降噪。
+          </p>
+          <fieldset class="audio-processing">
+            <legend>麦克风处理 · 可在通话中切换</legend>
+            <label><input id="audio-echoCancellation" type="checkbox" checked> <span>回声消除</span></label>
+            <label><input id="audio-noiseSuppression" type="checkbox"> <span>噪声抑制</span></label>
+            <label><input id="audio-autoGainControl" type="checkbox"> <span>自动增益</span></label>
+          </fieldset>
+          <div class="audio-presets">
+            <button type="button" id="audio-recommended">耳机推荐处理</button>
+            <button type="button" id="audio-original">原版处理 · 三项全开</button>
+          </div>
+          <label class="bitrate-label" for="audio-bitrate">每位伙伴的发送码率上限</label>
+          <select id="audio-bitrate" aria-describedby="audio-bitrate-help">
+            <option value="64000">64 kbps · 推荐</option>
+            <option value="48000">48 kbps</option>
+            <option value="32000">32 kbps · 上行紧张时尝试</option>
+            <option value="0">浏览器自动 · 不设置应用上限</option>
+          </select>
+          <p id="audio-bitrate-help" class="audio-help">
+            上限不是恒定码率；浏览器会按声音内容和网络动态调整。五人时本机向四位伙伴分别发送。
+            “原版处理”只切换采集处理，不改变此上限，便于单独比较。
+          </p>
+          <p id="audio-settings-status" class="audio-help" role="status"></p>
+          <pre id="capture-settings" class="capture-settings"></pre>
+          <div class="diagnostics-heading">
+            <h3>当前连接</h3>
+            <button type="button" id="audio-export">导出诊断</button>
+          </div>
+          <p class="audio-help">
+            展开此面板且页面可见时约每 2 秒采样。未报告的数据不会当作 0；RTT 是往返时间，不是嘴到耳延迟。
+            Opus 的 48 kHz RTP 时钟和编码能力声道数不等于麦克风实际采样率或双声道发送。
+          </p>
+          <div id="connection-stats" class="connection-stats">
+            尚无伙伴连接。加入房间并至少连接一位伙伴后显示统计。
+          </div>
+        </details>
       </section>
 
       <section class="feature-strip" aria-label="房间特点">
